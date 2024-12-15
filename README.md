@@ -8,8 +8,9 @@
 
 ## Source
 
-- [twitter-tid-generator](https://github.com/fa0311/twitter-tid-generator)
 - [twitter-tid-deobf](https://github.com/fa0311/twitter-tid-deobf)
+- [twitter-tid-script-cleaned](https://github.com/fa0311/twitter-tid-script-cleaned)
+- [twitter-tid-generator](https://github.com/fa0311/twitter-tid-generator)
 
 ## Other
 
