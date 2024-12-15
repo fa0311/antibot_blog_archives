@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Twitter header: part 3</title>
+    <link rel="stylesheet" href="https://antibot.blog/assets/built/screen.css?v=77d320c2f7">
+
+    <link rel="canonical" href="https://antibot.blog/twitter-header-part-3/">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    
+    <meta property="og:site_name" content="antibot.blog - Reverse engineering">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Twitter header: part 3">
+    <meta property="og:description" content="Intro
+
+
+This is the final part of a 3 part series covering the X-Client-Transaction-Id header on Twitter. Part 3 is going to be more technical than the olther 2 parts, as we will be making the header generator in golang. This will require a lot more work than the other">
+    <meta property="og:url" content="https://antibot.blog/twitter-header-part-3/">
+    <meta property="og:image" content="https://static.ghost.org/v5.0.0/images/publication-cover.jpg">
+    <meta property="article:published_time" content="2024-02-21T05:01:39.000Z">
+    <meta property="article:modified_time" content="2024-02-21T05:01:39.000Z">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Twitter header: part 3">
+    <meta name="twitter:description" content="Intro
+
+
+This is the final part of a 3 part series covering the X-Client-Transaction-Id header on Twitter. Part 3 is going to be more technical than the olther 2 parts, as we will be making the header generator in golang. This will require a lot more work than the other">
+    <meta name="twitter:url" content="https://antibot.blog/twitter-header-part-3/">
+    <meta name="twitter:image" content="https://static.ghost.org/v5.0.0/images/publication-cover.jpg">
+    <meta name="twitter:label1" content="Written by">
+    <meta name="twitter:data1" content="gopher">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="840">
+    
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "publisher": {
+        "@type": "Organization",
+        "name": "antibot.blog - Reverse engineering",
+        "url": "https://antibot.blog/",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "https://antibot.blog/favicon.ico",
+            "width": 48,
+            "height": 48
+        }
+    },
+    "author": {
+        "@type": "Person",
+        "name": "gopher",
+        "url": "https://antibot.blog/author/gopher/",
+        "sameAs": []
+    },
+    "headline": "Twitter header: part 3",
+    "url": "https://antibot.blog/twitter-header-part-3/",
+    "datePublished": "2024-02-21T05:01:39.000Z",
+    "dateModified": "2024-02-21T05:01:39.000Z",
+    "description": "Intro\n\n\nThis is the final part of a 3 part series covering the X-Client-Transaction-Id header on Twitter. Part 3 is going to be more technical than the olther 2 parts, as we will be making the header generator in golang. This will require a lot more work than the other 2 parts.\n\n\n\nAnimation\n\n\nIn part 2, we learned what all goes into building this header. During that adventure, we saw the biggest thing they could validate is the sha256 hash and the only part of that hash that is dynamic is the an",
+    "mainEntityOfPage": "https://antibot.blog/twitter-header-part-3/"
+}
+    </script>
+
+    <meta name="generator" content="Ghost 5.104">
+    <link rel="alternate" type="application/rss+xml" title="antibot.blog - Reverse engineering" href="https://antibot.blog/rss/">
+    
+    <script defer src="https://cdn.jsdelivr.net/ghost/sodo-search@~1.5/umd/sodo-search.min.js" data-key="28b7f5afe07e7d09a863796b3f" data-styles="https://cdn.jsdelivr.net/ghost/sodo-search@~1.5/umd/main.css" data-sodo-search="https://antibot-blog.ghost.io/" data-locale="en" crossorigin="anonymous"></script>
+    
+    <link href="https://antibot.blog/webmentions/receive/" rel="webmention">
+    <script defer src="/public/cards.min.js?v=77d320c2f7"></script><style>:root {--ghost-accent-color: #ff0066;}</style>
+    <link rel="stylesheet" type="text/css" href="/public/cards.min.css?v=77d320c2f7">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/themes/prism-tomorrow.min.css" integrity="sha512-vswe+cgvic/XBoF1OcM/TeJ2FW0OofqAVdCZiEYkd6dwGXthvkSFWOoGGJgS2CW70VK5dQM5Oh+7ne47s74VTg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+
+<body class="post-template is-head-stacked">
+<div class="gh-site">
+
+    <header id="gh-head" class="gh-head gh-outer">
+        <div class="gh-head-inner gh-inner">
+            <div class="gh-head-brand">
+                <div class="gh-head-brand-wrapper">
+                    <a class="gh-head-logo" href="https://antibot.blog">
+                            antibot.blog - Reverse engineering
+                    </a>
+                </div>
+                <button class="gh-search gh-icon-btn" aria-label="Search this site" data-ghost-search><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></button>
+                <button class="gh-burger"></button>
+            </div>
+
+            <nav class="gh-head-menu">
+                <ul class="nav">
+    <li class="nav-home"><a href="https://antibot.blog/">Home</a></li>
+</ul>
+
+                        <button class="gh-search gh-icon-btn" aria-label="Search this site" data-ghost-search><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></button>
+            </nav>
+
+            <div class="gh-head-actions">
+            </div>
+        </div>
+    </header>
+
+    
+
+<main id="gh-main" class="gh-main">
+    <article class="gh-article post no-image">
+
+        <header class="gh-article-header gh-canvas">
+            <span class="gh-article-meta">
+                By <a href="/author/gopher/">gopher</a>
+                —
+                <time datetime="2024-02-21">Feb 21, 2024</time>
+            </span>
+
+            <h1 class="gh-article-title">Twitter header: part 3</h1>
+
+
+                    </header>
+
+        <div class="gh-content gh-canvas">
+            <h1 id="intro">Intro</h1>
+<p>This is the final part of a 3 part series covering the <code>X-Client-Transaction-Id</code> header on Twitter. Part 3 is going to be more technical than the olther 2 parts, as we will be making the header generator in golang. This will require a lot more work than the other 2 parts.</p>
+<h1 id="animation">Animation</h1>
+<p>In part 2, we learned what all goes into building this header. During that adventure, we saw the biggest thing they could validate is the sha256 hash and the only part of that hash that is dynamic is the animation related stuff. Therefore, we know we will have to replicate this:</p>
+<pre><code class="language-js">let newDiv = document["createElement"]("div")
+document["body"]["append"](newDiv)
+let r = newDiv["animate"]({
+    color: ["#43e096", "#646538"],
+    transform: ["rotate(0deg)", "rotate(342deg)"],
+    easing: "cubic-bezier(0.33,0.10,0.29,-0.01)"
+}, 4096);
+r["pause"]()
+r["currentTime"] = 2000;
+let style = getComputedStyle(newDiv)
+</code></pre>
+<p>The expected output would be <code>style.color = "rgb(77, 187, 122)"</code> and <code>style.transform = "matrix(-0.227212, 0.973845, -0.973845, -0.227212, 0, 0)"</code>.</p>
+<p>Figuring out how to replicate these outputs in GoLang will require us to understand exactly what this <code>animate</code> function does. I decided I was going to look at whatever commit added this feature into chromium, aka the chrome browser itself. I was hoping this would make it easier to find what code I need to look at in the source code, since it's quite a big repository.</p>
+<p>After some looking I found <a href="https://developer.chrome.com/blog/web-animations-element-animate-is-now-in-chrome-36?ref=antibot.blog">this post on developer.chrome.com</a> showing exactly when this feature was added. If you scroll down to the bottom, you see mentions of <a href="https://github.com/web-animations/web-animations-js?ref=antibot.blog">this web-animations-js GitHub repository</a> that they say the functionality is based off of. This is a great lead, however, it doesn't really solve our problem. Firstly, this post is almost a decade old, who knows if this post is still accurate to how the function works now. Secondly, this repository is as well very old, very outdated, and pretty hard for me to read, it's not using very "modern" code styles to say the very least.</p>
+<p>First let's start by trying to confirm if this "web-animations-js" code is still reflective of how the modern day <code>Element.animate</code> function works. To do this, I'm going to clone the repo and setup a test html file to import all the JS files it uses and execute the code segment I gave earlier to compare the outputs. This seems easy, however, they don't provide any good testing HTML for this project and I'm not a web developer so I'm not very sure how to properly setup a test environment for this. After some trial and error, I was able to make a proper test file for this though:</p>
+<pre><code class="language-html">&lt;head&gt;
+    &lt;script src="src/dev.js"&gt;&lt;/script&gt;
+    &lt;script src="src/scope.js"&gt;&lt;/script&gt;
+    &lt;script src="src/handler-utils.js"&gt;&lt;/script&gt;
+    &lt;script src="src/timing-utilities.js"&gt;&lt;/script&gt;
+    &lt;script src="src/interpolation.js"&gt;&lt;/script&gt;
+    &lt;script src="src/property-interpolation.js"&gt;&lt;/script&gt;
+    &lt;script src="src/normalize-keyframes.js"&gt;&lt;/script&gt;
+    &lt;script src="src/keyframe-interpolations.js"&gt;&lt;/script&gt;
+    &lt;script src="src/number-handler.js"&gt;&lt;/script&gt;
+    &lt;script src="src/box-handler.js"&gt;&lt;/script&gt;
+    &lt;script src="src/dimension-handler.js"&gt;&lt;/script&gt;
+    &lt;script src="src/font-weight-handler.js"&gt;&lt;/script&gt;
+    &lt;script src="src/position-handler.js"&gt;&lt;/script&gt;
+    &lt;script src="src/shadow-handler.js"&gt;&lt;/script&gt;
+    &lt;script src="src/transform-handler.js"&gt;&lt;/script&gt;
+    &lt;script src="src/visibility-handler.js"&gt;&lt;/script&gt;
+    &lt;script src="src/animation.js"&gt;&lt;/script&gt;
+    &lt;script src="src/timeline.js"&gt;&lt;/script&gt;
+    &lt;script src="src/apply-preserving-inline-style.js"&gt;&lt;/script&gt;
+    &lt;script src="src/apply.js"&gt;&lt;/script&gt;
+    &lt;script src="src/web-animations-next-animation.js"&gt;&lt;/script&gt;
+    &lt;script src="src/color-handler.js"&gt;&lt;/script&gt;
+    &lt;script src="src/deprecation.js"&gt;&lt;/script&gt;
+    &lt;script src="src/element-animatable.js"&gt;&lt;/script&gt;
+    &lt;script src="src/effect-callback.js"&gt;&lt;/script&gt;
+    &lt;script src="src/group-constructors.js"&gt;&lt;/script&gt;
+    &lt;script src="src/keyframe-effect-constructor.js"&gt;&lt;/script&gt;
+    &lt;script src="src/keyframe-effect.js"&gt;&lt;/script&gt;
+    &lt;script src="src/matrix-decomposition.js"&gt;&lt;/script&gt;
+    &lt;script src="src/matrix-interpolation.js"&gt;&lt;/script&gt;
+    &lt;script src="src/property-names.js"&gt;&lt;/script&gt;
+    &lt;script src="src/tick.js"&gt;&lt;/script&gt;
+    &lt;script src="src/web-animations-bonus-cancel-events.js"&gt;&lt;/script&gt;
+    &lt;script src="src/web-animations-bonus-object-form-keyframes.js"&gt;&lt;/script&gt;
+&lt;/head&gt;
+</code></pre>
+<p>After making this file, I used the VSCode plugin <a href="https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer&ref=antibot.blog">live server</a> to easily spin-up this html file into a local-host "website", for testing. I do want to make sure that their code is correctly overriding the built-in animate function:<br><br>
+<img src="https://img001.prntscr.com/file/img001/dVW02NqWTv-ranS_9RvoPA.png" alt="" loading="lazy"><br><br>
+We can see that the animate function is indeed being overwritten with the web-animations-js code, so now we can test if the results are 1:1. From the output, we see that they are!</p>
+<p>Now we can start figuring this out. Like I said previously, this code is hard for me to read, I opted to set breakpoints in a few parts of the code until I could figure out what exactly I needed. Firstly, I needed to identify how <code>r["currentTime"] = 2000;</code> was changing the color and transform. After some looking, I found <code>web-animations-next-animation.js</code> which contains a "getter" and "setter" for <code>currentTime</code>. I can set a breakpoint on the "setter" and see what when I do set the currentTime, this code is indeed hit:</p>
+<pre><code class="language-js">set currentTime(v) {
+    this._updatePromises();
+    this._animation.currentTime = isFinite(v) ? v : Math.sign(v) * Number.MAX_VALUE;
+    this._register();
+    this._forEachChild(function(child, offset) {
+        child.currentTime = v - offset;
+    });
+    this._updatePromises();
+}
+</code></pre>
+<p>I went ahead and stepped through this code, line by line, waiting to see at what point <code>getComputedStyle(newDiv).color</code> would change. It only changed after <code>this._animation.currentTime = isFinite(v) ? v : Math.sign(v) * Number.MAX_VALUE;</code>. The same logic should apply, whatever <code>this._animate._currentTime</code> is must have a setter that's updating color/transform. Using chrome's very good devtools, we can trace this very nicely. Let's see the <code>_animate._currentTime</code> setter:</p>
+<pre><code class="language-js">set currentTime(newTime) {
+    newTime = +newTime;
+    if (isNaN(newTime)) 
+        return;
+    scope.restart();
+    if (!this._paused &amp;&amp; this._startTime != null) {
+        this._startTime = this._timeline.currentTime - newTime / this._playbackRate;
+    }
+    this._currentTimePending = false;
+    if (this._currentTime == newTime)
+        return;
+    if (this._idle) {
+        this._idle = false;
+        this._paused = true;
+    }
+    this._tickCurrentTime(newTime, true);
+    scope.applyDirtiedAnimation(this);
+}
+</code></pre>
+<p>After some looking, we see that <code>scope.applyDirtiedAnimation(this)</code> is what's responsible for modifying the Element's attributes, however, that function just calls a function that isn't exactly clear what it's calling, if you look into it though, you can see that this is the function it's running:</p>
+<pre><code class="language-js">scope.KeyframeEffect = function(target, effectInput, timingInput, id) {
+    var effectTime = EffectTime(shared.normalizeTimingInput(timingInput));
+    var interpolations = scope.convertEffectInput(effectInput);
+    var timeFraction;
+    var keyframeEffect = function() {
+      WEB_ANIMATIONS_TESTING &amp;&amp; console.assert(typeof timeFraction !== 'undefined');
+      interpolations(target, timeFraction);
+    };
+    keyframeEffect._update = function(localTime) {
+      timeFraction = effectTime(localTime);
+      return timeFraction !== null;
+    };
+    keyframeEffect._clear = function() {
+      interpolations(target, null);
+    };
+    keyframeEffect._hasSameTarget = function(otherTarget) {
+      return target === otherTarget;
+    };
+    keyframeEffect._target = target;
+    keyframeEffect._totalDuration = effectTime._totalDuration;
+    keyframeEffect._id = id;
+    return keyframeEffect;
+};
+</code></pre>
+<p>We see what we really want is this <code>keyframeEffect</code> function. This function calls <code>interpolations(target, timeFraction);</code>. If you trace that call, you get here:</p>
+<pre><code class="language-js">scope.convertEffectInput = function(effectInput) {
+    var keyframes = shared.normalizeKeyframes(effectInput);
+    var propertySpecificKeyframeGroups = makePropertySpecificKeyframeGroups(keyframes);
+    var interpolations = makeInterpolations(propertySpecificKeyframeGroups);
+    return function(target, fraction) {
+      if (fraction != null) {
+        interpolations.filter(function(interpolation) {
+          return fraction &gt;= interpolation.applyFrom &amp;&amp; fraction &lt; interpolation.applyTo;
+        }).forEach(function(interpolation) {
+          var offsetFraction = fraction - interpolation.startOffset;
+          var localDuration = interpolation.endOffset - interpolation.startOffset;
+          var scaledLocalTime = localDuration == 0 ? 0 : interpolation.easingFunction(offsetFraction / localDuration);
+          scope.apply(target, interpolation.property, interpolation.interpolation(scaledLocalTime));
+        });
+      } else {
+        for (var property in propertySpecificKeyframeGroups)
+          if (property != 'offset' &amp;&amp; property != 'easing' &amp;&amp; property != 'composite')
+            scope.clear(target, property);
+      }
+    };
+};
+</code></pre>
+<p>Specifically, we're going to end up on the <code>scope.apply(target, interpolation.property, interpolation.interpolation(scaledLocalTime));</code> which actually sets the Element's color/transformation. We can see that because <code>interpolation.property</code> is <code>color</code> when we look. So <code>color</code> is set to <code>interpolation.interpolation(scaledLocalTime)</code> and <code>scaledLocalTime</code> is the return of <code>interpolation.easingFunction(offsetFraction / localDuration)</code>. It appears this input looks like a percentage of how far into the total animation lifespan we're setting the currentTime to. So if the total time is <code>4096</code> and our currentTime is <code>2000</code>, the input to this should be <code>2000 / 4096</code> aka <code>0.48828125</code>. So first we need to look into this <code>easingFunction</code>, which is you remember, is actually one of our inputs to the <code>animate</code> function, <code>easing: "cubic-bezier(0.33,0.10,0.29,-0.01)"</code>. Let's look into the easing function:</p>
+<pre><code class="language-js">function cubic(a, b, c, d) {
+    if (a &lt; 0 || a &gt; 1 || c &lt; 0 || c &gt; 1) {
+      return linear;
+    }
+    return function(x) {
+      if (x &lt;= 0) {
+        var start_gradient = 0;
+        if (a &gt; 0)
+          start_gradient = b / a;
+        else if (!b &amp;&amp; c &gt; 0)
+          start_gradient = d / c;
+        return start_gradient * x;
+      }
+      if (x &gt;= 1) {
+        var end_gradient = 0;
+        if (c &lt; 1)
+          end_gradient = (d - 1) / (c - 1);
+        else if (c == 1 &amp;&amp; a &lt; 1)
+          end_gradient = (b - 1) / (a - 1);
+        return 1 + end_gradient * (x - 1);
+      }
+
+      var start = 0, end = 1;
+      function f(a, b, m) { return 3 * a * (1 - m) * (1 - m) * m + 3 * b * (1 - m) * m * m + m * m * m};
+      while (start &lt; end) {
+        var mid = (start + end) / 2;
+        var xEst = f(a, c, mid);
+        if (Math.abs(x - xEst) &lt; 0.00001) {
+          return f(b, d, mid);
+        }
+        if (xEst &lt; x) {
+          start = mid;
+        } else {
+          end = mid;
+        }
+      }
+      return f(b, d, mid);
+    }
+}
+</code></pre>
+<p>This function <code>cubic</code> is taking in <code>0.33, 0.1, 0.29, -0.01</code>, the same numbers we see in the input object <code>easing: "cubic-bezier(0.33,0.10,0.29,-0.01)"</code>. The return function is what inputs this time percentage and outputs whatever number we need. Great, now let's look into how this output is being transformed into what we see, the RGBA value's. We end up here:</p>
+<pre><code class="language-js">var interp = scope.Interpolation.apply(null, interpolationArgs);
+return function(t) {
+    if (t == 0) return left;
+    if (t == 1) return right;
+    return interp(t);
+};
+</code></pre>
+<p>Eventually, after a lot of looking, we end up here:</p>
+<pre><code class="language-js">function interpolate(from, to, f) {
+    if ((typeof from == 'number') &amp;&amp; (typeof to == 'number')) {
+      return from * (1 - f) + to * f;
+    }
+    if ((typeof from == 'boolean') &amp;&amp; (typeof to == 'boolean')) {
+      return f &lt; 0.5 ? from : to;
+    }
+
+    WEB_ANIMATIONS_TESTING &amp;&amp; console.assert(
+        Array.isArray(from) &amp;&amp; Array.isArray(to),
+        'If interpolation arguments are not numbers or bools they must be arrays');
+
+    if (from.length == to.length) {
+      var r = [];
+      for (var i = 0; i &lt; from.length; i++) {
+        r.push(interpolate(from[i], to[i], f));
+      }
+      return r;
+    }
+    throw 'Mismatched interpolation arguments ' + from + ':' + to;
+}
+</code></pre>
+<p>When looking, <code>from</code> and <code>to</code> are both arrays of numbers and <code>f</code> is <code>0.3015547171021191</code>, aka what our <code>curve</code> function is outputting. When looking closer, <code>from</code> and <code>to</code> appear to align with the numbers in the <code>let numArr = [67,224,150,100,101,56,240,84,140,73,126]</code> before they're turned to hex and used for the animation function as a hex color code.</p>
+<p>So we have what we need, if you debug that <code>interpolate</code> function, you can see that it does the same thing for <code>rotation</code> aka <code>transform</code>. Now we can start making the generator!</p>
+<h1 id="porting-code">Porting Code</h1>
+<p>When porting this code, we will need to basically make everything a float64. Porting this code does appear easy, so let's go ahead and see!</p>
+<p>Firstly, we'll port the javascript we just got to generate the RGBA and matrix numbers. First we need to port that <code>cubic easing</code> code, this looks like a pretty simple algorithm, porting this code is overall pretty simple:</p>
+<pre><code class="language-go">// file: ./payload/cubiccurve.go
+package payload
+
+type cubic struct {
+	Curves [4]float64
+}
+
+func (c *cubic) getValue(time float64) float64 {
+	startGradient := 0.0
+	endGradient := 0.0
+	if time &lt;= 0.0 {
+		if c.Curves[0] &gt; 0.0 {
+			startGradient = c.Curves[1] / c.Curves[0]
+		} else if c.Curves[1] == 0.0 &amp;&amp; c.Curves[2] &gt; 0.0 {
+			startGradient = c.Curves[3] / c.Curves[2]
+		}
+		return startGradient * time
+	}
+
+	if time &gt;= 1.0 {
+		if c.Curves[2] &lt; 1.0 {
+			endGradient = (c.Curves[3] - 1.0) / (c.Curves[2] - 1.0)
+		} else if c.Curves[2] == 1.0 &amp;&amp; c.Curves[0] &lt; 1.0 {
+			endGradient = (c.Curves[1] - 1.0) / (c.Curves[0] - 1.0)
+		}
+		return 1.0 + endGradient*(time-1.0)
+	}
+
+	start := 0.0
+	end := 1.0
+	mid := 0.0
+	for start &lt; end {
+		mid = (start + end) / 2
+		xEst := f(c.Curves[0], c.Curves[2], mid)
+		if abs(time-xEst) &lt; 0.00001 {
+			return f(c.Curves[1], c.Curves[3], mid)
+		}
+		if xEst &lt; time {
+			start = mid
+		} else {
+			end = mid
+		}
+	}
+	return f(c.Curves[1], c.Curves[3], mid)
+}
+
+func abs(in float64) float64 {
+	if in &lt; 0 {
+		return -in
+	}
+	return in
+}
+
+func f(a, b, m float64) float64 {
+	return 3.0*a*(1-m)*(1-m)*m + 3.0*b*(1-m)*m*m + m*m*m
+}
+</code></pre>
+<p>You can see that everything here is a float64, we will be doing that throughout everywhere we can. Next we need to port the <code>interpolate</code> function:</p>
+<pre><code class="language-go">// file: ./payload/interpolate.go
+package payload
+
+func interpolate(from, to []float64, f float64) []float64 {
+	out := []float64{}
+	for i := 0; i &lt; len(from); i++ {
+		out = append(out, interpolateNum(from[i], to[i], f))
+	}
+	return out
+}
+
+func interpolateNum(from, to, f float64) float64 {
+	return from*(1-f) + to*f
+}
+</code></pre>
+<p>Since using the <code>any</code> or <code>interface{}</code> type in golang is pretty annoying, I went ahead and split it into 2 funcs so we don't need to check for boolean or number type.</p>
+<p>Now the last thing, the value that is returned for <code>matrix</code> is actually the degrees of rotation, not the matrix, which is 6 numbers that represent a 2d plain of how the image is rotated. In order to convert degrees to matrix, I looked on stackoverflow and found this answer: <a href="https://stackoverflow.com/a/25367782?ref=antibot.blog">stackoverflow.com/a/25367782</a>. You may notice that this uses <code>radians</code> though, I'm not sure what a <code>radian</code> is so I had to google converting from degrees to radians, turns out that it's actually super easy, google itself will give you the formula which is <code>1° × π/180</code>. Now we know everything we need to write that last part:</p>
+<pre><code class="language-go">// file: ./payload/rotation.go
+package payload
+
+import "math"
+
+func convertRotationToMatrix(degrees float64) []float64 {
+	// ! first convert degrees to radians
+	radians := degrees * math.Pi / 180
+	// ! now we do this:
+	/*
+		[cos(r), -sin(r), 0]
+		[sin(r), cos(r), 0]
+
+		in this order:
+		[cos(r), sin(r), -sin(r), cos(r), 0, 0]
+	*/
+	c := math.Cos(radians)
+	s := math.Sin(radians)
+	return []float64{c, s, -s, c, 0, 0}
+}
+</code></pre>
+<p>This is only one part of the payload though, there's still everything else. Now is when we make the actual header generator.</p>
+<p>So let's port code sequentially, let's assume our inputs will be <code>path</code>, <code>method</code>, <code>key</code> all as strings, then <code>frames</code> as a type <code>[][][]int</code>. This will represent all the 4 <code>x-animation-0</code> arrays we need.</p>
+<p>First step would be converting the key to bytes. Let's see how their js does it:</p>
+<pre><code class="language-js">function makeUintArray(key) {
+    return new Uint8Array(atob(key)["split"]("")["map"](n =&gt; n["charCodeAt"](0)))
+}
+</code></pre>
+<p>So it passes that string into this function that base64 decodes it but maps all of the decoded characters to their ascii character code. Golang doesn't have an stdlib function for this, not as far as I know, so let's make our own function for <code>charCodeAt</code>:</p>
+<pre><code class="language-go">// file: ./payload/utils.go
+func atob(input string) string {
+    data, err := base64.RawStdEncoding.DecodeString(input)
+    if err != nil {
+        return ""
+    }
+    return string(data)
+}
+
+func charCodeAt(a string, i int) int {
+    return int(a[i])
+}
+</code></pre>
+<p>To make this all easier to read, I've made a helper func called <code>atob</code> as well, just to match what we see in javascript. So now this is the beginning of our generator:</p>
+<pre><code class="language-go">// file: ./payload/payload.go
+// GenerateHeader - generates an x-transaction-id header
+func GenerateHeader(path, method, key string, frames [][][]int) string {
+	keyBytes := []int{}
+    key = atob(key)
+    for i := 0; i &lt; len(key); i++ {
+        keyBytes = append(keyBytes, charCodeAt(key, i))
+    }
+    return ""
+}
+</code></pre>
+<p>Now we need to do time. The issue is, they represent time in a 4 byte representation of uint8's instead of just one single number. I most definitely don't know how to do that in golang already, time to google! Eventually, I came across this fairly old gist on GitHub that did exactly that: <a href="https://gist.github.com/chiro-hiro/2674626cebbcb5a676355b7aaac4972d?ref=antibot.blog">gist.github.com/chiro-hiro/...</a>. We now have what we need to do the time bytes:</p>
+<pre><code class="language-go">// file: ./payload/utils.go
+func timeToBytes(val uint32) []int {
+    r := make([]int, 4)
+    for i := uint32(0); i &lt; 4; i++ {
+        r[i] = int((val &gt;&gt; (8 * i)) &amp; 0xff)
+    }
+    return r
+}
+
+// file: ./payload/payload.go
+timeNow := uint32((time.Now().UnixMilli() - 1682924400*1000) / 1000)
+timeNowBytes := timeToBytes(timeNow)
+</code></pre>
+<p>Now the next thing the header gen does is generate that <code>X_LOGO_HEX_STR</code>. This part should be made relatively easy now that we have matrix and RGBA generation done, there is a few issues though.</p>
+<p>The first problem we end up facing is something I really didn't expect. So what this is doing is basically taking the RGB numbers and the matrix numbers then converting them to hex, then removing any <code>.</code> or <code>-</code> left over. Seems simple, except there's a difference between how GoLang and JavaScript do hex with floating point numbers. I was never really able to figure out why they do things differently, but we do know what we need to do overall is convert a float64 to a hex string. I looked on GitHub for something in GoLang that could convert a float64 to hex string, eventually I found this: <a href="https://github.com/jeffreydwalter/arlo-go/blob/d68ae1fb4cb7c88f263dd63d9e5a839b95fa9926/internal/util/util.go?ref=antibot.blog#L34C36-L34C36">github.com/jeffreydwalter/arlo-go/...</a></p>
+<pre><code class="language-go">func FloatToHex(x float64) string {
+	var result []byte
+	quotient := int(x)
+	fraction := x - float64(quotient)
+
+	for quotient &gt; 0 {
+		quotient = int(x / 16)
+		remainder := int(x - (float64(quotient) * 16))
+
+		if remainder &gt; 9 {
+			result = append([]byte{byte(remainder + 55)}, result...)
+		} else {
+			for _, c := range strconv.Itoa(int(remainder)) {
+				result = append([]byte{byte(c)}, result...)
+			}
+		}
+
+		x = float64(quotient)
+	}
+
+	if fraction == 0 {
+		return string(result)
+	}
+
+	result = append(result, '.')
+
+	for fraction &gt; 0 {
+		fraction = fraction * 16
+		integer := int(fraction)
+		fraction = fraction - float64(integer)
+
+		if integer &gt; 9 {
+			result = append(result, byte(integer+55))
+		} else {
+			for _, c := range strconv.Itoa(int(integer)) {
+				result = append(result, byte(c))
+			}
+		}
+	}
+
+	return string(result)
+}
+</code></pre>
+<p>For anyone concerned about using code off of GitHub, the license used on this project is the MIT license, which makes it free for anyone to use for pretty much anything they want, including private use. I've shortened this a lot, however, I probably spent over an hour figuring out both what was wrong and what I needed to do to even be able to get the idea of finding this repository. This was quite a headache, I wasn't aware of how exactly converting from string to hex actually worked, much less float64 to hex.</p>
+<p>Anyways, now that we've done that, we can finish up making that <code>X_LOGO_HEX_STR</code> code:</p>
+<pre><code class="language-go">// ./file/payload/util.go
+func floatToHex(x float64) string {
+	var result []byte
+	//...
+	return string(result)
+}
+func round(num float64) int {
+    return int(num + math.Copysign(0.5, num))
+}
+
+func toFixed(num float64, precision int) float64 {
+    output := math.Pow(10, float64(precision))
+    return float64(round(num*output)) / output
+}
+func a(b, c, d float64) float64 {
+    return b*(d-c)/255 + c
+}
+func b(a int) float64 {
+    if a%2 == 1 {
+        return -1.0
+    }
+    return 0.0
+}
+
+// ./file/payload/payload.go
+row := frames[keyBytes[5]%4][keyBytes[2]%16]
+targetTime := float64(keyBytes[12]%16*(keyBytes[14]%16)*(keyBytes[7]%16)) / totalTime
+fromColor := []float64{float64(row[0]), float64(row[1]), float64(row[2]), 1.0}
+toColor := []float64{float64(row[3]), float64(row[4]), float64(row[5]), 1.0}
+fromRotation := []float64{0.0}
+toRotation := []float64{a(float64(row[6]), 60.0, 360.0)}
+row = row[7:]
+curves := [4]float64{}
+for i := 0; i &lt; len(row); i++ {
+    curves[i] = a(float64(row[i]), b(i), 1.0)
+}
+c := &amp;cubic{Curves: curves}
+val := c.getValue(targetTime)
+color := interpolate(fromColor, toColor, val)
+rotation := interpolate(fromRotation, toRotation, val)
+matrix := convertRotationToMatrix(rotation[0])
+strArr := []string{}
+for i := 0; i &lt; len(color)-1; i++ {
+    strArr = append(strArr, hex.EncodeToString([]byte{byte(math.Round(color[i]))}))
+}
+for i := 0; i &lt; len(matrix)-2; i++ {
+    rounded := toFixed(matrix[i], 2)
+    if rounded &lt; 0 {
+        rounded = -rounded
+    }
+    strArr = append(strArr, "0"+strings.ToLower(floatToHex(rounded)[1:]))
+}
+strArr = append(strArr, "0", "0")
+</code></pre>
+<p>This is quite a lot more code than you may have expected, however, it's all just stuff we already knew. Like making the time used for the cubic-curve generation, we already knew that was <code>x/4096</code>. We knew <code>x</code> was something from the key bytes, multiplied together. I did go ahead and port those <code>a</code> and <code>b</code> functions as well though, since those are just math, I figured I didn't need to go into it much. I also wrote some helper functions to do fixed floating point precision a little easier to read. We do need to fix the floats to <code>x.xx</code> percision though, by default the float64's will return <code>x.xxxxxxxxxxxxxxxx</code> which would mess with our output in hex.</p>
+<p>Next we will need to do the sha256 hash, this is pretty easy in golang, however, the plan I have in mind is to keep the <code>byte</code> numbers as <code>int</code> instead, it'll make it easier for me to read personally since that's how the JavaScript uses them:</p>
+<pre><code class="language-go">// file: ./payload/payload.go
+hash := sha256.Sum256([]byte(fmt.Sprintf(`%s!%s!%vbird%s`, method, path, timeNow, strings.Join(strArr, ""))))
+hashBytes := []int{}
+for i := 0; i &lt; len(hash)-16; i++ {
+    hashBytes = append(hashBytes, int(hash[i]))
+}
+</code></pre>
+<p>Now we just need to get a random number, 0-256, which will act as the <code>xorByte</code>. Then we will combine all of the "bytes" (aka int's in this case) into one array so we can xor them:</p>
+<pre><code class="language-go">xorByte := rand.Intn(256)
+bytes := []int{xorByte}
+bytes = append(bytes, keyBytes...)
+bytes = append(bytes, timeNowBytes...)
+bytes = append(bytes, hashBytes...)
+bytes = append(bytes, 1)
+</code></pre>
+<p>We're actually super close to being done, only two more things. Firstly, we need to XOR these int's then convert them to bytes in a byte array, this is so that when we go to get the final product, base64 encoded string, we can pass in <code>[]byte</code> like it wants:</p>
+<pre><code class="language-go">// file: ./payload/payload.go
+out := []byte{}
+for i := 0; i &lt; len(bytes); i++ {
+    if i == 0 {
+// ! don't xor the xor byte
+        out = append(out, byte(bytes[i]))
+        continue
+    }
+    out = append(out, byte(bytes[i]^xorByte))
+}
+</code></pre>
+<p>Now we have the final step, <code>btoa</code>, aka base64 encoding:</p>
+<pre><code class="language-go">// file: ./payload/utils.go
+func btoa(str []byte) string {
+    return base64.StdEncoding.EncodeToString([]byte(str))
+}
+
+// file: ./payload/payload.go
+package payload
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"math"
+	"math/rand"
+	"strings"
+	"time"
+)
+
+const totalTime = 4096.0
+
+// GenerateHeader - generates an x-transaction-id header
+func GenerateHeader(path, method, key string, frames [][][]int) string {
+	// ...
+	xorByte := rand.Intn(256)
+	bytes := []int{xorByte}
+	bytes = append(bytes, keyBytes...)
+	bytes = append(bytes, timeNowBytes...)
+	bytes = append(bytes, hashBytes...)
+	bytes = append(bytes, 1)
+	out := []byte{}
+	for i := 0; i &lt; len(bytes); i++ {
+		if i == 0 {
+			// ! don't xor the xor byte
+			out = append(out, byte(bytes[i]))
+			continue
+		}
+		out = append(out, byte(bytes[i]^xorByte))
+	}
+	return strings.ReplaceAll(btoa(out), "=", "")
+}
+</code></pre>
+<h1 id="testing">Testing</h1>
+<p>To test our code, we're going to be using the script we made to pull information out of the header before. If we supply a path, method, key, and frames that we got from our browser, so we know it's correct, we can hard code the <code>timeNow</code> and <code>xorByte</code> that we get from that output. After hardcoding those values, the output should be 1:1 with our header in the browser.</p>
+<p>Thankfully, it is. When I was coding this for the first time though, of-course my output wasn't correct first try, just one of the joys of programming I guess, nothing ever works first try.</p>
+<p>Now what I wanted to do was make this into a simple localhost HTTP API to use it in a tool to check if using this header correctly would increase account quality when doing stuff on Twitter, like tweeting, liking posts, following people, etc. I'll spoil the result, it's completely useless. The header doesn't make Twitter "trust" your request any more or less. I guess it's just there to gather data right now, however, it makes me wonder; Why go through so much effort making this whole dynamic key system, obfuscating the files, etc. just to do practically nothing with it? At least nothing that would warrant obfuscation like that.</p>
+<h1 id="conclusion">Conclusion</h1>
+<p>You can find the full project, including that simple localhost HTTP API I made on my GitHub: <a href="https://github.com/obfio/twitter-tid-generator?ref=antibot.blog">github.com/obfio/twitter-tid-generator</a>!</p>
+<p>I hope everyone enjoyed this three part series on this header, even though it didn't turn out to be a useful header. Sometimes, that's just how it goes when reverse engineering and/or botting a website. Sometimes you end up accidentally wasting time, usually it ends up being a nice learning experience though!</p>
+<p>For anyone wondering, no I won't be posting the script I used to test the effects of the header on account quality, they aren't super hard to make though.</p>
+<h1 id="references">References</h1>
+<p>GitHub for this code: <a href="https://github.com/obfio/twitter-tid-generator?ref=antibot.blog">github.com/obfio/twitter-tid-generator</a><br><br>
+Gist for int32 -&gt; int8 array: <a href="https://gist.github.com/chiro-hiro/2674626cebbcb5a676355b7aaac4972d?ref=antibot.blog">gist.github.com/chiro-hiro/...</a><br><br>
+GitHub for float64 -&gt; hex: <a href="https://github.com/jeffreydwalter/arlo-go/blob/d68ae1fb4cb7c88f263dd63d9e5a839b95fa9926/internal/util/util.go?ref=antibot.blog#L34C36-L34C36">github.com/jeffreydwalter/arlo-go/...</a><br><br>
+GitHub for Web-Animations-JS: <a href="https://github.com/web-animations/web-animations-js?ref=antibot.blog">github.com/web-animations/...</a><br><br>
+Google Chrome post about adding web-animations: <a href="https://developer.chrome.com/blog/web-animations-element-animate-is-now-in-chrome-36?ref=antibot.blog">developer.chrome.com/blog/...</a><br></p>
+
+        </div>
+
+
+        <footer class="gh-article-footer gh-canvas">
+            <nav class="gh-navigation">
+                <div class="gh-navigation-previous">
+                        <a class="gh-navigation-link" href="/twitter-header-part2/">
+                            <span class="gh-navigation-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12"></line>
+    <polyline points="12 19 5 12 12 5"></polyline>
+</svg> Previous issue</span>
+                            <h4 class="gh-navigation-title">Twitter header: part2</h4>
+                        </a>
+                </div>
+
+                <div class="gh-navigation-middle"></div>
+
+                <div class="gh-navigation-next">
+                        <a class="gh-navigation-link" href="/twitter-ui_mentrics/">
+                            <span class="gh-navigation-label">Next issue <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="5" y1="12" x2="19" y2="12"></line>
+    <polyline points="12 5 19 12 12 19"></polyline>
+</svg></span>
+                            <h4 class="gh-navigation-title">Twitter UI_Mentrics</h4>
+                        </a>
+                </div>
+            </nav>
+        </footer>
+
+    </article>
+</main>
+
+
+
+
+    <footer class="gh-foot gh-outer">
+        <div class="gh-foot-inner gh-inner">
+            <div class="gh-copyright">
+                antibot.blog - Reverse engineering © 2024
+            </div>
+                <nav class="gh-foot-menu">
+                    <ul class="nav">
+    <li class="nav-sign-up"><a href="#/portal/">Sign up</a></li>
+</ul>
+
+                </nav>
+            <div class="gh-powered-by">
+                <a href="https://ghost.org/" target="_blank" rel="noopener">Powered by Ghost</a>
+            </div>
+        </div>
+    </footer>
+
+</div>
+
+    <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="pswp__bg"></div>
+
+    <div class="pswp__scroll-wrap">
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <div class="pswp__ui pswp__ui--hidden">
+            <div class="pswp__top-bar">
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)"></button>
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://antibot.blog/assets/built/main.min.js?v=77d320c2f7"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/components/prism-core.min.js" integrity="sha512-9khQRAUBYEJDCDVP2yw3LRUQvjJ0Pjx0EShmaQjcHa6AXiOv6qHQu9lCAIR8O+/D8FtaCoJ2c0Tf9Xo7hYH01Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/plugins/autoloader/prism-autoloader.min.js" integrity="sha512-fTl/qcO1VgvKtOMApX2PdZzkziyr2stM65GYPLGuYMnuMm1z2JLJG6XVU7C/mR+E7xBUqCivykuhlzfqxXBXbg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+</body>
+
+</html>

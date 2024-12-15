@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Twitter header: part2</title>
+    <link rel="stylesheet" href="https://antibot.blog/assets/built/screen.css?v=77d320c2f7">
+
+    <link rel="canonical" href="https://antibot.blog/twitter-header-part2/">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    
+    <meta property="og:site_name" content="antibot.blog - Reverse engineering">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Twitter header: part2">
+    <meta property="og:description" content="Intro
+
+
+This is part 2 to a series where I&#x27;m showing the process of reverse engineering the X-Client-Transaction-Id header on Twitter. If you want to get caught up, you can read part 1 here but it&#x27;s not required to understand part 2.
+
+
+In this post, I&#x27;ll be mainly doing reverse">
+    <meta property="og:url" content="https://antibot.blog/twitter-header-part2/">
+    <meta property="og:image" content="https://static.ghost.org/v5.0.0/images/publication-cover.jpg">
+    <meta property="article:published_time" content="2024-02-21T05:00:16.000Z">
+    <meta property="article:modified_time" content="2024-02-21T05:00:16.000Z">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Twitter header: part2">
+    <meta name="twitter:description" content="Intro
+
+
+This is part 2 to a series where I&#x27;m showing the process of reverse engineering the X-Client-Transaction-Id header on Twitter. If you want to get caught up, you can read part 1 here but it&#x27;s not required to understand part 2.
+
+
+In this post, I&#x27;ll be mainly doing reverse">
+    <meta name="twitter:url" content="https://antibot.blog/twitter-header-part2/">
+    <meta name="twitter:image" content="https://static.ghost.org/v5.0.0/images/publication-cover.jpg">
+    <meta name="twitter:label1" content="Written by">
+    <meta name="twitter:data1" content="gopher">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="840">
+    
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "publisher": {
+        "@type": "Organization",
+        "name": "antibot.blog - Reverse engineering",
+        "url": "https://antibot.blog/",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "https://antibot.blog/favicon.ico",
+            "width": 48,
+            "height": 48
+        }
+    },
+    "author": {
+        "@type": "Person",
+        "name": "gopher",
+        "url": "https://antibot.blog/author/gopher/",
+        "sameAs": []
+    },
+    "headline": "Twitter header: part2",
+    "url": "https://antibot.blog/twitter-header-part2/",
+    "datePublished": "2024-02-21T05:00:16.000Z",
+    "dateModified": "2024-02-21T05:00:16.000Z",
+    "description": "Intro\n\n\nThis is part 2 to a series where I&#x27;m showing the process of reverse engineering the X-Client-Transaction-Id header on Twitter. If you want to get caught up, you can read part 1 here but it&#x27;s not required to understand part 2.\n\n\nIn this post, I&#x27;ll be mainly doing reverse engineering. Figuring out what exactly goes into the header and showing how I went about verifying my assumptions and figuring out how Twitter may actually use this header themselves.\n\n\n\nManual Cleaning\n\n\nWhen we left off",
+    "mainEntityOfPage": "https://antibot.blog/twitter-header-part2/"
+}
+    </script>
+
+    <meta name="generator" content="Ghost 5.104">
+    <link rel="alternate" type="application/rss+xml" title="antibot.blog - Reverse engineering" href="https://antibot.blog/rss/">
+    
+    <script defer src="https://cdn.jsdelivr.net/ghost/sodo-search@~1.5/umd/sodo-search.min.js" data-key="28b7f5afe07e7d09a863796b3f" data-styles="https://cdn.jsdelivr.net/ghost/sodo-search@~1.5/umd/main.css" data-sodo-search="https://antibot-blog.ghost.io/" data-locale="en" crossorigin="anonymous"></script>
+    
+    <link href="https://antibot.blog/webmentions/receive/" rel="webmention">
+    <script defer src="/public/cards.min.js?v=77d320c2f7"></script><style>:root {--ghost-accent-color: #ff0066;}</style>
+    <link rel="stylesheet" type="text/css" href="/public/cards.min.css?v=77d320c2f7">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/themes/prism-tomorrow.min.css" integrity="sha512-vswe+cgvic/XBoF1OcM/TeJ2FW0OofqAVdCZiEYkd6dwGXthvkSFWOoGGJgS2CW70VK5dQM5Oh+7ne47s74VTg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+
+<body class="post-template is-head-stacked">
+<div class="gh-site">
+
+    <header id="gh-head" class="gh-head gh-outer">
+        <div class="gh-head-inner gh-inner">
+            <div class="gh-head-brand">
+                <div class="gh-head-brand-wrapper">
+                    <a class="gh-head-logo" href="https://antibot.blog">
+                            antibot.blog - Reverse engineering
+                    </a>
+                </div>
+                <button class="gh-search gh-icon-btn" aria-label="Search this site" data-ghost-search><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></button>
+                <button class="gh-burger"></button>
+            </div>
+
+            <nav class="gh-head-menu">
+                <ul class="nav">
+    <li class="nav-home"><a href="https://antibot.blog/">Home</a></li>
+</ul>
+
+                        <button class="gh-search gh-icon-btn" aria-label="Search this site" data-ghost-search><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg></button>
+            </nav>
+
+            <div class="gh-head-actions">
+            </div>
+        </div>
+    </header>
+
+    
+
+<main id="gh-main" class="gh-main">
+    <article class="gh-article post no-image">
+
+        <header class="gh-article-header gh-canvas">
+            <span class="gh-article-meta">
+                By <a href="/author/gopher/">gopher</a>
+                —
+                <time datetime="2024-02-21">Feb 21, 2024</time>
+            </span>
+
+            <h1 class="gh-article-title">Twitter header: part2</h1>
+
+
+                    </header>
+
+        <div class="gh-content gh-canvas">
+            <h1 id="intro">Intro</h1>
+<p>This is part 2 to a series where I'm showing the process of reverse engineering the <code>X-Client-Transaction-Id</code> header on Twitter. If you want to get caught up, you can <a href="https://antibot.blog/post/40c6dbb8ebadcafb995c3327c780ee44">read part 1 here</a> but it's not required to understand part 2.</p>
+<p>In this post, I'll be mainly doing reverse engineering. Figuring out what exactly goes into the header and showing how I went about verifying my assumptions and figuring out how Twitter may actually use this header themselves.</p>
+<h1 id="manual-cleaning">Manual Cleaning</h1>
+<p>When we left off in part 1, the script was still pretty dirty. There's artifacts from the dead code removal in there that I'm going to manually remove:</p>
+<pre><code class="language-js">Fr = () =&gt; {
+    const e = {};
+    e["KPXsc"] = "div";
+    const d = e;
+    {
+        const n = hr["createElement"]("div");
+        return hr["body"]["append"](n), [n, () =&gt; Hr([n])];
+    }
+    var a, k, m, C;
+}
+</code></pre>
+<p>In this case, we just want this function to be:</p>
+<pre><code class="language-js">Fr = () =&gt; {
+    const n = hr["createElement"]("div");
+    return hr["body"]["append"](n), [n, () =&gt; Hr([n])];
+}
+</code></pre>
+<p>Thankfully, this script is very small, this makes doing this manually very easy. Now the next thing I'm going to do is cleanup this stuff:</p>
+<pre><code class="language-js">const [hr, Sr] = [document, window],
+    [qr, Pr, vr, Rr, lr, Or, Qr, Gr, br, Jr, yr, pr, Ir] = [Sr["Number"], Sr["TextEncoder"], Sr["Uint8Array"], n =&gt; hr["querySelectorAll"](n), Sr["Date"], Sr["Uint32Array"], Sr["crypto"]["subtle"], Sr["Array"]["from"], Sr["Math"], Sr["RTCPeerConnection"], Sr["Promise"], Sr[uo(1011, 960, "jgCb", 1e3, 1030) + "ion"], Sr["getComputedStyle"]],
+    [Mr, xr, Tr, Er, Zr] = [n =&gt; br["round"](n), n =&gt; br["floor"](n), () =&gt; br["random"](), n =&gt; n["slice"](0, 16), () =&gt; 0],
+    [Xr, Ar, Ur] = [1, 1682924400, 2 ** (4 * 3)]
+</code></pre>
+<p>You may notice that in the second array of values, there's <code>uo(1011, 960, "jgCb", 1e3, 1030)</code>. I'm unsure why our deobfuscation didn't handle this, however, it shouldn't matter since you may also notice that the variable <code>Sr[uo(1011, 960, "jgCb", 1e3, 1030) + "ion"]</code> belongs to is actually never referenced. Saved us a headache there.</p>
+<p>Now the final thing I'm going to do is remove all the webpack "fluff", so it's smaller and easier to read, for the sake of keeping everyone on pace, I'll put the entire cleaned script here, however, I won't do that later as it would just make the blog harder to read. Here's the cleaned up code:</p>
+<pre><code class="language-js">let zr;
+const Kr = n =&gt; btoa(Array.from(n)["map"](n =&gt; String["fromCharCode"](n))["join"](""))["replace"](/=/g, ""),
+  jr = () =&gt; {
+    return n = gr(document.querySelectorAll("[name^=tw]")[0], "content"), new Uint8Array(atob(n)["split"]("")["map"](n =&gt; n["charCodeAt"](0)));
+  },
+  Lr = (n, W) =&gt; zr = zr || gr(Hr(document.querySelectorAll(n))[W[5] % 4]["childNodes"][0]["childNodes"][1], "d")["substring"](9)["split"]("C")["map"](n =&gt; n["replace"](/[^\d]+/g, " ")["trim"]()["split"](" ")["map"](Number)),
+  gr = (n, W) =&gt; n &amp;&amp; n["getAttribute"](W) || "",
+  wr = n =&gt; typeof n == "string" ? new TextEncoder()["encode"](n) : n,
+  Nr = n =&gt; crypto.subtle["digest"]("sha-256", wr(n)),
+  Br = n =&gt; (n &lt; 16 ? "0" : "") + n["toString"](16),
+  Vr = (n, W) =&gt; Number["parseInt"](n, W),
+  Hr = n =&gt; Array.from(n)["map"](n =&gt; {
+    var W;
+    return null != (W = n["parentElement"]) &amp;&amp; W["removeChild"](n), n;
+  }),
+  Fr = () =&gt; {
+    const n = document["createElement"]("div");
+    return document["body"]["append"](n), [n, () =&gt; Hr([n])];
+  },
+  Yr = (n, W, t) =&gt; W ? n ^ t[0] : n,
+  $r = (n, W, t) =&gt; {
+      if (!n["animate"]) return;
+      const r = n["animate"](no(W), 4096);
+      r["pause"](), r["currentTime"] = Math.round(t / 10) * 10;
+  },
+  _r = (n, W, t, r) =&gt; {
+    const o = n * (t - W) / 255 + W;
+    return r ? Math.floor(o) : o["toFixed"](2);
+  },
+  no = n =&gt; ({
+    color: ["#" + Br(n[0]) + Br(n[1]) + Br(n[2]), "#" + Br(n[3]) + Br(n[4]) + Br(n[5])],
+    transform: ["rotate(0deg)", "rotate(" + _r(n[6], 60, 360, !0) + "deg)"],
+    easing: "cubic-bezier(" + Array.from(n["slice"](7))["map"]((n, W) =&gt; _r(n, W % 2 ? -1 : 0, 1))["join"]() + ")"
+  });
+let Wo,
+  to,
+  ro = [];
+const co = n =&gt; {
+  if (!Wo) {
+    const [W, L] = [n[2] % 16, n[12] % 16 * (n[14] % 16) * (n[7] % 16)],
+    g = Lr(".r-32hy0", n);
+    new Promise(() =&gt; {
+      const t = new RTCPeerConnection(),
+        o = Math.random()["toString"](36);
+      to = t["createDataChannel"](o), t["createOffer"]()["then"](u =&gt; {
+        try {
+          const W = u["sdp"] || o;
+          ro = Array.from(wr([W[n[5] % 8] || "4", W[n[8] % 8]])), t["close"]();
+        } catch {}
+      })["catch"](0);
+    })["catch"](0);
+    const [w, N] = Fr();
+    $r(w, g[W], L);
+    const B = getComputedStyle(w);
+    Wo = Array.from(("" + B["color"] + B["transform"])["matchAll"](/([\d.-]+)/g))["map"](n =&gt; Number(Number(n[0])["toFixed"](2))["toString"](16))["join"]("")["replace"](/[.-]/g, ""), N();
+  }
+  return Wo;
+};
+return async (n, W) =&gt; {
+  const r = Math.floor((Date["now"]() - 1682924400 * 1e3) / 1e3),
+    o = new Uint8Array(new Uint32Array([r])["buffer"]),
+    u = jr(),
+    c = co(u);
+  return Kr(new Uint8Array([Math.random() * 256]["concat"](Array.from(u), Array.from(o), (Array.from(new Uint8Array(await Nr([W, n, r]["join"]("!") + "bird" + c)))["concat"](ro)).slice(0, 16), [1]))["map"](Yr));
+};
+</code></pre>
+<h1 id="reverse-engineering">Reverse Engineering</h1>
+<p>Now that we have the script a lot easier to read, we can start to try and reverse engineer it! I'm going to start at the entry point, where we see <code>return async (n, W) =&gt; {</code>.</p>
+<p>I'll be renaming <code>n</code> and <code>W</code> to be <code>path</code> and <code>method</code> respectively. This will make it easier to remember what's going on later. So now we can go line by line. The first line looks to be just making a timestamp, likewise, the second line seems to be making the timestamp into a uint8 array. Now I personally didn't know what this code would've done so I went ahead and tested it myself:<br>
+<img src="https://img001.prntscr.com/file/img001/c5Pb9p7bTMCxUzBldj4IZg.png" alt="" loading="lazy"><br><br>
+So yea, it looks like it's just making the int32 into an array of int8's, so far so good. I'll rename those 2 variables to <code>time</code> and <code>timeBuffer</code> respectively.</p>
+<p>Next we have this function call:</p>
+<pre><code class="language-js">jr = () =&gt; {
+    n = gr(document.querySelectorAll("[name^=tw]")[0], "content")
+    return new Uint8Array(atob(n)["split"]("")["map"](n =&gt; n["charCodeAt"](0)));
+}
+gr = (n, W) =&gt; n &amp;&amp; n["getAttribute"](W) || ""
+</code></pre>
+<p>We're not immediately sure what this <code>[name^=tw]</code> is, however, it seems clear what this is doing generally. So we get the content of whatever that element is, we base64 decode it, then we get the character codes. The last thing to figure out is what that element actually is. It appears like it isn't removing the element after getting the content so we should be fine to just run our own <code>getAttribute</code>:<br>
+<img src="https://img001.prntscr.com/file/img001/k1e3TIeKRYqJhnwqDzZ0DA.png" alt="" loading="lazy"><br><br>
+If we ctrl + f in the network tab for this string, we will see this: <code>&lt;meta name="twitter-site-verification" content="mentUHYU4+1yPz30fM6/IcNS+stghA1baFhBkGzE7075BPd15lUcDqC/RaF4jR+b"/&gt;</code></p>
+<p>The way I like to think of this is, it's basically the only thing that makes this "challenge" into a "dynamic challenge". I'll be renaming this function into <code>getKey</code> and the variable into <code>KEY</code>.</p>
+<p>We can see this key is passed into the next function which happens to be where we're going, lets rename that parameter to <code>KEY</code> as well.</p>
+<p>In this function you will see why I said that previous statement about the key, look at this:</p>
+<pre><code class="language-js"> const [W, L] = [KEY[2] % 16, KEY[12] % 16 * (KEY[14] % 16) * (KEY[7] % 16)],
+    g = Lr(".r-32hy0", KEY);
+// ...
+const W = u["sdp"] || o;
+ro = Array.from(wr([W[KEY[5] % 8] || "4", W[KEY[8] % 8]]))
+//...
+$r(w, g[W], L);
+</code></pre>
+<p>So the key is being used to create values for functions to use and to get specific values. Anyways, lets skip over this <code>[W, L]</code> declaration and look into this function call <code>Lr(".r-32hy0", KEY)</code>:</p>
+<pre><code class="language-js">Lr = (n, W) =&gt; zr = zr || gr(Hr(document.querySelectorAll(n))[W[5] % 4]["childNodes"][0]["childNodes"][1], "d")["substring"](9)["split"]("C")["map"](n =&gt; n["replace"](/[^\d]+/g, " ")["trim"]()["split"](" ")["map"](Number))
+</code></pre>
+<p>Ah... that's pretty awful to read. Let's go ahead and rewrite this and see execute it ourselves to see what's going on here:</p>
+<pre><code class="language-js">let zr;
+function Lr(name, KEY) {
+    if(zr) {
+       return zr 
+    }
+    let nodes = getNodes(document.querySelectorAll(name))
+    let node = nodes[KEY[5] % 4]["childNodes"][0]["childNodes"][1]
+    let attribute = getAttribute(node, "d")
+    let arr = attribute["substring"](9)["split"]("C")
+    return arr["map"](n =&gt; n["replace"](/[^\d]+/g, " ")["trim"]()["split"](" ")["map"](Number))
+}
+
+function getNodes(n) {
+    return Array.from(n).map(n =&gt; {
+        var W;
+        return null != (W = n.parentElement) &amp;&amp; W.removeChild(n), n
+    })
+}
+
+function getAttribute(e, att) {
+    return e &amp;&amp; e.getAttribute(att) || ""
+}
+</code></pre>
+<p>For now, lets just try to see what exactly it is these <code>nodes</code> are and where they are in the HTML. Instead of doing <code>nodes[KEY[5] % 4]</code>, I'll just be doing <code>nodes[0]</code> as anything between 0 and 3 should be valid.</p>
+<p>So I'll run the function <code>Lr(".r-32hy0")</code> and we should see what's going on!<br>
+<img src="https://img001.prntscr.com/file/img001/SYHkHFquTc2ZVrehEGfwhg.png" alt="" loading="lazy"><br>
+Well, that's weird. I'll be honest, it probably took me longer than it should have to find what was going on. If you notice, the <code>getNodes</code> function is doing <code>W.removeChild(n)</code>, I'd imagine this is why we're unable to just run this function ourselves and see what's going on. Let's try this again, except this time, let's use chrome's <code>block URL</code> feature to block their script from running so we can see what's actually there.</p>
+<p>I'm gonna be honest, while writing this post I was actually super confused because it still wasn't working, then I realized they just updated the name of the element. To see the new name, I'll just deobfuscate the new script. We will cover a more optimal way to do this in the future though. I just wanted to say this incase anyone following along hit this as well and got confused.</p>
+<p>Now we have the new value and can see what we need:<br>
+<img src="https://img001.prntscr.com/file/img001/OJxGHtF3Sem3MclX3ScmPg.png" alt="" loading="lazy"><br>
+This is great, if we look in the html (after refreshing the page since it has removed the elements) we can see exactly what it's grabbing:<br>
+<img src="https://img001.prntscr.com/file/img001/ooiZ5vZmQYq-H65-ANxQlg.png" alt="" loading="lazy"><br>
+Great, so this function basically just returns a specific one of these elements but formatted as a 2d array of numbers. In the previous screenshot we can see the function returned a 2d array, 16 in length where each array was 11 long. At this point, we already know that this value does change but it doesn't change every request, it just changes every time the script updates. We're not covering it right now but in the future we will go over that more.</p>
+<p>I'll be renaming this <code>Lr</code> function to <code>get2DArray</code> and the global <code>zr</code> variable to <code>_2DArray</code>. We can also rename <code>g = get2DArray(".r-32hy0", KEY)</code> to <code>arr</code>.</p>
+<p>THe next thing I'm going to do is skip this <code>new Promise</code> thing. Why? Well, In all honesty, I have no clue what <code>RTCPeerConnection</code> does exactly so I'd much rather skip past that and hope I don't have to do it. You can tell that maybe you won't have to because the "channel" is <code>Math.random().toString(36)</code>. Who knows, we may or may not come back to it later.</p>
+<p>Alright, lets go onto the <code>Fr</code> function. Now it does appear this function just creates a div for them to do something with then returns a function that will delete it. Let's go ahead and rename the returned values, we can make them <code>newDiv</code> and <code>deleteDiv</code>.</p>
+<p>Now we're onto this final function call <code>$r(newDiv, arr[W], L);</code>:</p>
+<pre><code class="language-js">$r = (n, W, t) =&gt; {
+    if (!n["animate"]) return;
+    const r = n["animate"](no(W), 4096);
+    r["pause"](), 
+    r["currentTime"] = Math.round(t / 10) * 10;
+}
+no = n =&gt; ({
+    color: ["#" + Br(n[0]) + Br(n[1]) + Br(n[2]), "#" + Br(n[3]) + Br(n[4]) + Br(n[5])],
+    transform: ["rotate(0deg)", "rotate(" + _r(n[6], 60, 360, !0) + "deg)"],
+    easing: "cubic-bezier(" + Array.from(n["slice"](7))["map"]((n, W) =&gt; _r(n, W % 2 ? -1 : 0, 1))["join"]() + ")"
+})
+Br = n =&gt; (n &lt; 16 ? "0" : "") + n["toString"](16)
+_r = (n, W, t, r) =&gt; {
+    const o = n * (t - W) / 255 + W;
+    return r ? Math.floor(o) : o["toFixed"](2);
+}
+</code></pre>
+<p>Quite a lot to go through here. Let's just start by renaming everything we can. I'll spoil the surprise and say <code>Br</code> is just converting a number to a hex string. I'll also just completely remove this <code>no</code> function, it is just returning an object so I don't see a reason to have it there. Now we're looking at this:</p>
+<pre><code class="language-js">$r = (newDiv, numArr, KEY_NUMBER) =&gt; {
+    if (!newDiv["animate"]) return;
+    const r = newDiv["animate"]({
+        color: ["#" + toHex(numArr[0]) + toHex(numArr[1]) + toHex(numArr[2]), "#" + toHex(numArr[3]) + toHex(numArr[4]) + toHex(numArr[5])],
+        transform: ["rotate(0deg)", "rotate(" + _r(numArr[6], 60, 360, !0) + "deg)"],
+        easing: "cubic-bezier(" + Array.from(numArr["slice"](7))["map"]((n, W) =&gt; _r(n, W % 2 ? -1 : 0, 1))["join"]() + ")"
+    }, 4096);
+    r["pause"]()
+    r["currentTime"] = Math.round(KEY_NUMBER / 10) * 10;
+}
+toHex = n =&gt; (n &lt; 16 ? "0" : "") + n["toString"](16)
+_r = (n, W, t, r) =&gt; {
+    const o = n * (t - W) / 255 + W;
+    return r ? Math.floor(o) : o["toFixed"](2);
+}
+</code></pre>
+<p>Alright, so we're still not 100% sure what's going on here but it's far more readable. Let's go and try to execute this ourselves to see what happens. We can use the 2d array we got before and just choose a random one of those arrays for the <code>numArr</code> input. For <code>KEY_NUMBER</code>, we should just be able to use any number from 0 to 4096, according to the docs on the animate function, the second input to the function is the length. Here's the code I made:</p>
+<pre><code class="language-js">function toHex(n) { return (n &lt; 16 ? "0" : "") + n["toString"](16) }
+function _r(n, W, t, r){
+    const o = n * (t - W) / 255 + W;
+    return r ? Math.floor(o) : o["toFixed"](2);
+}
+
+let numArr = [67,224,150,100,101,56,240,84,140,73,126]
+let newDiv = document["createElement"]("div")
+document["body"]["append"](newDiv)
+if (!newDiv["animate"]) {
+    aaaaaaah
+}
+let r = newDiv["animate"]({
+    color: ["#" + toHex(numArr[0]) + toHex(numArr[1]) + toHex(numArr[2]), "#" + toHex(numArr[3]) + toHex(numArr[4]) + toHex(numArr[5])],
+    transform: ["rotate(0deg)", "rotate(" + _r(numArr[6], 60, 360, !0) + "deg)"],
+    easing: "cubic-bezier(" + Array.from(numArr["slice"](7))["map"]((n, W) =&gt; _r(n, W % 2 ? -1 : 0, 1))["join"]() + ")"
+}, 4096);
+r["pause"]()
+r["currentTime"] = Math.round(2000 / 10) * 10;
+let style = getComputedStyle(newDiv)
+</code></pre>
+<p>Now we can see the responses we expect:<br>
+<img src="https://img001.prntscr.com/file/img001/iLtA2VcKSWq2m1Td2A2MEA.png" alt="" loading="lazy"><br>
+So this function animates the div and that gives us these <code>color</code> and <code>transform</code> values that are used to get this <code>Wo</code> value. In this very last line where it's setting <code>Wo</code>, aka the variable it returns from this <code>co</code> function, there's quite a lot going on here. For now, let's just rename the function and move on. When we go to make a header generator for this header, we can come back to this and understand it better. I'll be renaming <code>co</code> to <code>getAnimationStr</code> and <code>c = getAnimationStr(KEY)</code> to <code>animationStr</code>, since this does appear to return a string. If we're wrong, we can always just change it later.</p>
+<p>This is all really starting to come together, great to see. I don't like seeing all of this jumbled mess of code though, spamming <code>Array.from</code> and <code>Uint8Array</code>, a bunch of nested function calls. This is harder to read than it needs to be. Let's deconstruct this into variables:</p>
+<pre><code class="language-js">let randomValue = [Math.random() * 256]
+let a = await Nr([method, path, time]["join"]("!") + "bird" + animationKey)
+let b = Array.from(new Uint8Array(a))["concat"](ro)
+return Kr(new Uint8Array(randomValue["concat"](Array.from(KEY), Array.from(timeBuffer), b.slice(0, 16), [1]))["map"](Yr));
+</code></pre>
+<p>Much better, Now we can get started on this mess. As expected, let's see what <code>Nr</code> is. This looks simple, it appears it can be replaced with this:</p>
+<pre><code class="language-js">function getTextEncoder(text) {
+    return typeof text == "string" ? new TextEncoder()["encode"](text) : text
+}
+function sha256(textEncoder) {
+    return crypto.subtle["digest"]("sha-256", textEncoder)
+}
+let sha256Hash = await sha256(getTextEncoder([method, path, time]["join"]("!") + "bird" + animationKey))
+</code></pre>
+<p>I love when these scripts have easter eggs in them, in this case, "bird" referring to the twitter bird lol. Anyways, this does just appear to be a sha256 hash. Now we need to figure out the <code>["concat"](ro)</code> thing it does with this hash after it converts it to an array.</p>
+<p>Oh hey, it appears that <code>ro</code> is an array that's set by that weird <code>RTCPeerConnection</code> usage we skipped earlier. Well, let's think about this. When we use this <code>b</code> variable, it does <code>b.slice(0, 16)</code>. It does this <strong>AFTER</strong> adding that <code>ro</code> array onto the end of the sha256 hash bytes. So since sha256 is 32bytes and it's being cut off to be only 0-16, that <code>RTCPeerConnection</code> stuff doesn't matter! I cannot express how happy this made me, I really did not want to figure out how that worked on top of everything else. Anyways, lets name this variable to <code>shaBytes</code> and move on.</p>
+<p>Next we are doing <code>["map"](Yr)</code> so let's see what <code>Yr</code> is:</p>
+<pre><code class="language-js">Yr = (n, W, t) =&gt; W ? n ^ t[0] : n
+</code></pre>
+<p>Ok so, this is pretty obvious xor, however, what is that <code>W ? ... : n</code> doing? Wait, there's 3 inputs here? I thought <code>.map</code> only returned one value, not 3? Alright, there's gotta be something here I don't know since I'm not really a JavaScript developer (thankfully). I'll write some mock code to see what's going on here:<br>
+<img src="https://img001.prntscr.com/file/img001/a6my9uA4T0CSKoJBcPY35A.png" alt="" loading="lazy"><br><br>
+Now I'm not joking when I said I didn't know what this was doing at first, I really don't code in JavaScript much but that's what this is all about, learning. So I guess you can have an extra 2 optional variables there, one being index and the second being the full <strong>ORIGINAL</strong> value you're mapping.</p>
+<p>Now that we got this out of the way, we still don't really know why they're doing it. So we know <code>W</code> is the index, but how exactly are we doing a boolean check on the index? Well I did actually know that, <code>0</code> would return false and everything else would return true. At first I did actually think only 1 would return true but I guess any number that's not 0 returns true. So to sum this up, it basically just does an XOR over every byte EXCEPT the first byte. If you look closer, that first byte is infact the XOR number itself so this does make sense. So now we know our very first byte is going to be the XOR byte, this means we can rename <code>randomValue</code> to <code>XOR_BYTE</code>. We can also rename this <code>Yr</code> function to <code>XOR</code>.</p>
+<p>Now we just have one thing left, this <code>Kr</code> function:</p>
+<pre><code class="language-js">Kr = n =&gt; btoa(Array.from(n)["map"](n =&gt; String["fromCharCode"](n))["join"](""))["replace"](/=/g, "")
+</code></pre>
+<p>Well that's made super easy, let's just rename this to <code>encode</code>. It's pretty much just base64 encoding the bytes, since <code>btoa</code> needs to take in a string, it just converts the bytes to characters though.</p>
+<p>Alright and now I'm happy to say, we have a much better looking script. I'm going to do a bit more cleaning up, just for simplicity later on. Here's my final result:</p>
+<pre><code class="language-js">let _2DArray;
+function encode(n) {
+    return btoa(Array.from(n)["map"](n =&gt; String["fromCharCode"](n))["join"](""))["replace"](/=/g, "")
+}
+function getKey() {
+    // &lt;meta name="twitter-site-verification" content="mentUHYU4+1yPz30fM6/IcNS+stghA1baFhBkGzE7075BPd15lUcDqC/RaF4jR+b"/&gt;
+    return n = document.querySelectorAll("[name^=tw]")[0].getAttribute("content"), new Uint8Array(atob(n)["split"]("")["map"](n =&gt; n["charCodeAt"](0)))
+}
+function get2DArray(name, KEY) {
+    // loading-x-anim-0, loading-x-anim-1, etc. to 3
+    return _2DArray = _2DArray || getElements(document.querySelectorAll(name))[KEY[5] % 4]["childNodes"][0]["childNodes"][1].getAttribute("d")["substring"](9)["split"]("C")["map"](n =&gt; n["replace"](/[^\d]+/g, " ")["trim"]()["split"](" ")["map"](Number))
+}
+function toHex(n) {
+    return (n &lt; 16 ? "0" : "") + n["toString"](16)
+}
+function getElements(n) {
+    return Array.from(n)["map"](n =&gt; {
+        var W;
+        return null != (W = n["parentElement"]) &amp;&amp; W["removeChild"](n), n;
+    })
+}
+function createDiv() {
+    const n = document["createElement"]("div");
+    return document["body"]["append"](n), [n, () =&gt; getElements([n])];
+}
+function doAnimation(newDiv, numArr, frameTime) {
+    if (!newDiv["animate"]) return;
+    const r = newDiv["animate"]({
+        color: ["#" + toHex(numArr[0]) + toHex(numArr[1]) + toHex(numArr[2]), "#" + toHex(numArr[3]) + toHex(numArr[4]) + toHex(numArr[5])],
+        transform: ["rotate(0deg)", "rotate(" + _r(numArr[6], 60, 360, !0) + "deg)"],
+        easing: "cubic-bezier(" + Array.from(numArr["slice"](7))["map"]((n, W) =&gt; _r(n, W % 2 ? -1 : 0, 1))["join"]() + ")"
+    }, 4096);
+    r["pause"]()
+    r["currentTime"] = Math.round(frameTime / 10) * 10;
+}
+const XOR = (n, W, t) =&gt; W ? n ^ t[0] : n,
+    _r = (n, W, t, r) =&gt; {
+        const o = n * (t - W) / 255 + W;
+        return r ? Math.floor(o) : o["toFixed"](2);
+    }
+let animationStr;
+const setAnimationStr = KEY =&gt; {
+    const [index, frameTime] = [KEY[2] % 16, KEY[12] % 16 * (KEY[14] % 16) * (KEY[7] % 16)],
+        arr = get2DArray(".r-32hy0", KEY);
+    const [newDiv, deleteDiv] = createDiv();
+    doAnimation(newDiv, arr[index], frameTime);
+    const style = getComputedStyle(newDiv);
+    animationStr = Array.from(("" + style["color"] + style["transform"])["matchAll"](/([\d.-]+)/g))["map"](n =&gt; Number(Number(n[0])["toFixed"](2))["toString"](16))["join"]("")["replace"](/[.-]/g, "")
+    deleteDiv();
+};
+function getTextEncoder(text) {
+    return typeof text == "string" ? new TextEncoder()["encode"](text) : text
+}
+function sha256(textEncoder) {
+    return crypto.subtle["digest"]("sha-256", textEncoder)
+}
+return async (path, method) =&gt; {
+    const time = Math.floor((Date["now"]() - 1682924400 * 1e3) / 1e3),
+        timeBuffer = new Uint8Array(new Uint32Array([time])["buffer"]),
+        KEY = getKey()
+    if(!animationStr) {
+        setAnimationStr(KEY)
+    }
+    let XOR_BYTE = [Math.random() * 256]
+    let sha256Hash = await sha256(getTextEncoder([method, path, time]["join"]("!") + "bird" + animationStr))
+    let shaBytes = Array.from(new Uint8Array(sha256Hash))
+    return encode(new Uint8Array(XOR_BYTE["concat"](Array.from(KEY), Array.from(timeBuffer), shaBytes.slice(0, 16), [1]))["map"](XOR));
+};
+</code></pre>
+<p>Alright, very cool, we've got this looking quite a lot like source code at this point. Let's go over everything we know though.</p>
+<h1 id="how-twitter-works">How Twitter Works</h1>
+<p>So this is all nice and cool, knowing what data goes into it, but what is the point? What exactly is Twitter doing? That's a very loaded question but let's try to answer it using what we already know. Let's ask ourselves, how would twitter actually validate this header, what exactly are they even validating? What can they validate?</p>
+<p>Well my idea was to make a POC of what twitter's backend may look like when processing the request. To be clear, this is what we have:</p>
+<pre><code class="language-json">1 0-256 random byte
+48 bytes from the key
+4 bytes from the time
+16 bytes from the sha256 hash
+1 literal number one byte
+</code></pre>
+<p>So let's make a script that tries to just get these values out of a given header. Now I'm not super experienced in this stuff, however, I did come up with a way to do this that does technically work:</p>
+<pre><code class="language-js">const header = "1/+dpeUe1JOQrHPcWPad/KVM1V8miCo17v1N1vC/hSzBUEPBhSBXZ+4vvamCZ5MvGdMD99ZnXBdD2qaxuO24qoY6SDeZ1g"
+let headerBytes = atob(header).split("").map(n =&gt; n.charCodeAt(0))
+let XOR_BYTE = headerBytes[0]
+
+let map = {}
+
+for(var i = 0; i &lt; 256; i++) {
+    map[i^XOR_BYTE] = i
+}
+
+let outputBytes = [XOR_BYTE]
+for(var i = 1; i &lt; headerBytes.length; i++) {
+    outputBytes.push(map[headerBytes[i]])
+}
+console.log(outputBytes)
+</code></pre>
+<p>We can see in this output that the final byte is <code>1</code> which is exactly what we expected, this seems to work! Alright, let's go ahead and try to validate.</p>
+<p>So what exactly does validation look like? Well, there's a lot of possibilities here. This header is used on a lot of endpoints and to assume they <strong>ALL</strong> process it to same would be highly unlikely knowing everything I know about Twitter. In general, I'd imagine it works something like this though (only showing how it'd work logged into an account):</p>
+<pre><code class="language-yaml">1.) You request to /home with an `auth_token` and `ct0` (aka csrf) cookie set
+2.) Twitter would then likely tie a specific `twitter-site-verification` "key" to your ct0, because the ct0 is meant to be tied to your session, meaning there should be multiple per account depending on the platform. This would make it easier to control
+3.) Tied to that `twitter-site-verification` would likely be an expected output for your animation. This is because this is the only thing that is in the sha hash that's also tied to the "key".
+4.) Now when you submit a header, they lookup your ct0 and get the expected "animationStr" and "key". They would likely have a better way to reverse that XOR.
+5.) To validate, they would sha256 the time you submitted in the bytes, the request path + method, and the expected "animationStr" to see if the first 16 sha bytes match.
+6.) They would then probably check that your time looks realistic, like the payload wasn't generated too long ago
+</code></pre>
+<p>Having this in mind, let's just do some basic validation. We don't currently <strong>really</strong> understand how that animationStr works yet and having it tied to a specific key would be annoying right now. For now, we can just make it pull out the bytes we need, convert the time bytes to the actual time, make sure the key bytes line up, then we're good:</p>
+<pre><code class="language-js">let timeCreated = 0
+let keyBytes = []
+let timeBytes = []
+let shaBytes = []
+for(var i = 1; i &lt; outputBytes.length; i++) {
+    if(i-1 &lt; keyBytes.length &amp;&amp; keyBytes[i-1] != outputBytes[i]) {
+        break;
+    }
+    if(i == outputBytes.length &amp;&amp; outputBytes[i] != 1) {
+        break;
+    }
+    if(i &lt; 49) {
+        keyBytes.push(outputBytes[i])
+        continue
+    }
+    if(i &gt;= 49 &amp;&amp; timeBytes.length != 4) {
+        timeBytes.push(outputBytes[i])
+        continue
+    }
+    if(i &gt;= 53 &amp;&amp; i != outputBytes.length-1) {
+        shaBytes.push(outputBytes[i])
+    }
+}
+console.log(keyBytes)
+console.log(timeBytes)
+timeCreated = timeBytes[0] + (timeBytes[1] &lt;&lt; 8) + (timeBytes[2] &lt;&lt; 16) + (timeBytes[3] &lt;&lt; 24)
+console.log(timeCreated)
+console.log(shaBytes)
+</code></pre>
+<p>From this, we can see that our little proof of concept is correct. This will help us later on.</p>
+<h1 id="conclusion">Conclusion</h1>
+<p>This header really has been fun, I hope you've enjoyed walking through this with me. If you'd like to see the final resources of part 2, you can see them at <a href="https://github.com/obfio/twitter-tid-script-cleaned?ref=antibot.blog">github.com/obfio/twitter-tid-script-cleaned</a>.</p>
+<p>In part 3, we will be going far more in-depth in how that <code>animate</code> function actually works in chrome and finishing off this series by making a header generator in GoLang. Overall actually making the generator in GoLang was very difficult, I hope you guys will enjoy part 3 when it's out :)</p>
+<h1 id="references">References</h1>
+<p>GitHub for this code: <a href="https://github.com/obfio/twitter-tid-script-cleaned?ref=antibot.blog">github.com/obfio/twitter-tid-script-cleaned</a></p>
+
+        </div>
+
+
+        <footer class="gh-article-footer gh-canvas">
+            <nav class="gh-navigation">
+                <div class="gh-navigation-previous">
+                        <a class="gh-navigation-link" href="/twitter/">
+                            <span class="gh-navigation-label"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12"></line>
+    <polyline points="12 19 5 12 12 5"></polyline>
+</svg> Previous issue</span>
+                            <h4 class="gh-navigation-title">Twitter Header: Part 1</h4>
+                        </a>
+                </div>
+
+                <div class="gh-navigation-middle"></div>
+
+                <div class="gh-navigation-next">
+                        <a class="gh-navigation-link" href="/twitter-header-part-3/">
+                            <span class="gh-navigation-label">Next issue <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="5" y1="12" x2="19" y2="12"></line>
+    <polyline points="12 5 19 12 12 19"></polyline>
+</svg></span>
+                            <h4 class="gh-navigation-title">Twitter header: part 3</h4>
+                        </a>
+                </div>
+            </nav>
+        </footer>
+
+    </article>
+</main>
+
+
+
+
+    <footer class="gh-foot gh-outer">
+        <div class="gh-foot-inner gh-inner">
+            <div class="gh-copyright">
+                antibot.blog - Reverse engineering © 2024
+            </div>
+                <nav class="gh-foot-menu">
+                    <ul class="nav">
+    <li class="nav-sign-up"><a href="#/portal/">Sign up</a></li>
+</ul>
+
+                </nav>
+            <div class="gh-powered-by">
+                <a href="https://ghost.org/" target="_blank" rel="noopener">Powered by Ghost</a>
+            </div>
+        </div>
+    </footer>
+
+</div>
+
+    <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="pswp__bg"></div>
+
+    <div class="pswp__scroll-wrap">
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <div class="pswp__ui pswp__ui--hidden">
+            <div class="pswp__top-bar">
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)"></button>
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://antibot.blog/assets/built/main.min.js?v=77d320c2f7"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/components/prism-core.min.js" integrity="sha512-9khQRAUBYEJDCDVP2yw3LRUQvjJ0Pjx0EShmaQjcHa6AXiOv6qHQu9lCAIR8O+/D8FtaCoJ2c0Tf9Xo7hYH01Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.28.0/plugins/autoloader/prism-autoloader.min.js" integrity="sha512-fTl/qcO1VgvKtOMApX2PdZzkziyr2stM65GYPLGuYMnuMm1z2JLJG6XVU7C/mR+E7xBUqCivykuhlzfqxXBXbg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+</body>
+
+</html>
