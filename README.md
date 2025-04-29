@@ -21,3 +21,12 @@ Clean up by fa0311.
 Python implementation by iSarabjitDhiman.
 
 - [tweeterpy](https://github.com/iSarabjitDhiman/TweeterPy/tree/master/tweeterpy/tid)
+
+Python implementation by d60.
+
+- [twikit](https://github.com/d60/twikit/tree/main/twikit/x_client_transaction)
+
+JavaScript implementation by BANKA2017.
+
+- [Twitter header: part 4](https://blog.nest.moe/posts/twitter-header-part-4)
+- [twitter-monitor](https://github.com/BANKA2017/twitter-monitor/blob/node/libs/core/Core.xClientTransactionID.mjs)
