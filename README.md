@@ -38,7 +38,7 @@ JavaScript implementation by Lqm1.
 
 
 
-## An approach that doesn’t involve direct implementation.
+## An approach that doesn’t involve direct implementation
 
 Browser hook implementation for TID by fa0311.
 
