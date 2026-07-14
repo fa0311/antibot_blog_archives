@@ -31,12 +31,13 @@ JavaScript implementation by BANKA2017.
 - [Twitter header: part 4](https://blog.nest.moe/posts/twitter-header-part-4)
 - [twitter-monitor](https://github.com/BANKA2017/twitter-monitor/blob/node/libs/core/Core.xClientTransactionID.mjs)
 
-
 JavaScript implementation by Lqm1.
 
 - [x-client-transaction-id](https://github.com/Lqm1/x-client-transaction-id)
 
+Ruby implementation by danbooru.
 
+- [danbooru](https://github.com/danbooru/danbooru/blob/master/app/logical/twitter_transaction_id_generator.rb)
 
 ## An approach that doesn’t involve direct implementation
 
