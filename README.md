@@ -20,7 +20,9 @@ Clean up by fa0311.
 
 Python implementation by iSarabjitDhiman.
 
-- [tweeterpy](https://github.com/iSarabjitDhiman/TweeterPy/tree/master/tweeterpy/tid)
+- [XClientTransaction](https://github.com/iSarabjitDhiman/XClientTransaction)
+- [tweeterpy](https://github.com/iSarabjitDhiman/TweeterPy/commits/master/tweeterpy/tid)
+  - added in [`3e2616d`](https://github.com/iSarabjitDhiman/TweeterPy/commit/3e2616d0d0a716db935f3c31b7c9c0b1e586148b), replaced with [`XClientTransaction`](https://github.com/iSarabjitDhiman/XClientTransaction) in [`9b87eef`](https://github.com/iSarabjitDhiman/TweeterPy/commit/9b87eefcc6d4ced7b9aef7f81dbe17d19144077e)
 
 Python implementation by d60.
 
