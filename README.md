@@ -39,8 +39,6 @@ Ruby implementation by danbooru.
 
 - [danbooru](https://github.com/danbooru/danbooru/blob/master/app/logical/twitter_transaction_id_generator.rb)
 
-## An approach that doesn’t involve direct implementation
-
 Browser hook implementation for TID by fa0311.
 
 - [x-client-transaction-id-pair-dict](https://github.com/fa0311/x-client-transaction-id-pair-dict)
